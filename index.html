@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ТагирРиита — пористость пород</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+        body {
+            background: #e5ecf3;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+        /* главный контейнер с тенью */
+        .app-window {
+            width: 1300px;
+            max-width: 100%;
+            background: #ffffffdd;
+            backdrop-filter: blur(2px);
+            border-radius: 48px 48px 40px 40px;
+            box-shadow: 0 30px 60px rgba(10, 30, 50, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        /* шапка с названием и бургером */
+        .app-header {
+            background: #0a3144;
+            padding: 18px 32px;
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            color: white;
+        }
+        .burger-icon {
+            font-size: 32px;
+            line-height: 1;
+            cursor: pointer;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1f4b66;
+            border-radius: 60px;
+            transition: 0.2s;
+            user-select: none;
+        }
+        .burger-icon:hover {
+            background: #2e6280;
+        }
+        .site-title {
+            font-size: 1.9rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            background: linear-gradient(130deg, #fff, #bddbff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-sub {
+            margin-left: auto;
+            font-size: 1.2rem;
+            opacity: 0.9;
+            background: #1f4b66;
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-weight: 500;
+        }
+
+        /* основная часть (рядом с меню) */
+        .main-layout {
+            display: flex;
+            min-height: 620px;
+            transition: 0.2s;
+        }
+        /* боковое меню (скрыто по умолчанию) */
+        .side-menu {
+            width: 280px;
+            background: #f4f9ff;
+            border-right: 2px solid #b9d4ec;
+            padding: 28px 18px;
+            flex-shrink: 0;
+            transform: translateX(-100%);
+            display: none;
+            transition: 0.2s;
+            height: auto;
+        }
+        .side-menu.visible {
+            transform: translateX(0);
+            display: block;
+        }
+        .menu-item {
+            font-size: 1.4rem;
+            font-weight: 600;
+            padding: 20px 22px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 34px;
+            box-shadow: 0 5px 12px rgba(0,20,40,0.08);
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.1s;
+            color: #0b374f;
+        }
+        .menu-item.active {
+            border-color: #2a7faa;
+            background: #ddecfa;
+        }
+        .menu-item:hover {
+            background: #cde2f5;
+        }
+        /* контентная область */
+        .content-panel {
+            flex: 1;
+            background: white;
+            padding: 30px 30px 30px 30px;
+            border-radius: 0 0 32px 0;
+        }
+
+        /* ---- словарь ---- */
+        .dictionary-block {
+            animation: fade 0.25s;
+        }
+        .dict-entry {
+            background: #f0f8ff;
+            padding: 28px 28px;
+            margin-bottom: 22px;
+            border-radius: 38px;
+            border-left: 12px solid #2a7faa;
+        }
+        .dict-term {
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: #0c3346;
+            margin-bottom: 12px;
+        }
+        .dict-def {
+            font-size: 1.16rem;
+            line-height: 1.5;
+            color: #1f4a60;
+            margin-bottom: 12px;
+        }
+        .dict-note {
+            background: #ffffffb8;
+            border-radius: 28px;
+            padding: 16px 22px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #004d73;
+        }
+
+        /* калькулятор (прежний интерфейс, слегка обновлен) */
+        .calc-block {
+            /* тот же стиль */
+        }
+        .grid-field {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .grid-field label {
+            min-width: 300px;
+            font-weight: 600;
+            color: #1a4b64;
+            font-size: 1rem;
+        }
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 2 1 260px;
+        }
+        .input-wrapper input[type="number"] {
+            width: 160px;
+            padding: 10px 12px;
+            border: 2px solid #cbd6e3;
+            border-radius: 20px;
+            font-size: 1rem;
+            background: white;
+            transition: 0.15s;
+            outline: none;
+        }
+        .input-wrapper input[type="number"]:focus {
+            border-color: #2a7faa;
+            box-shadow: 0 0 0 3px rgba(42,127,170,0.2);
+        }
+        .unit-badge {
+            background: #e3ecf5;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #134b6b;
+            min-width: 80px;
+            text-align: center;
+        }
+        .select-row {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            margin-bottom: 20px;
+            background: #f8fafd;
+            padding: 18px 18px;
+            border-radius: 40px;
+        }
+        .density-preset {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: #e1eff9;
+            padding: 10px 24px;
+            border-radius: 40px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+        .preset-value {
+            background: white;
+            border-radius: 32px;
+            padding: 8px 20px;
+            font-weight: 700;
+            color: #003153;
+        }
+        .inline-field {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 18px 0;
+            flex-wrap: wrap;
+        }
+        .poro-box {
+            background: #f1f9ff;
+            border-radius: 40px;
+            padding: 24px 28px;
+            margin-top: 20px;
+        }
+        .result-area {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            flex-wrap: wrap;
+            background: white;
+            border-radius: 60px;
+            padding: 16px 28px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.02);
+        }
+        .result-value {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: #0a3142;
+        }
+        .history-box {
+            background: #eaf1f9;
+            border-radius: 34px;
+            padding: 18px 24px;
+            margin-top: 28px;
+            border: 2px dashed #8bb4d1;
+        }
+        .history-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #10455f;
+        }
+        #historyList {
+            list-style: none;
+            margin-top: 14px;
+            max-height: 150px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        #historyList li {
+            background: white;
+            margin: 6px 0;
+            padding: 12px 22px;
+            border-radius: 30px;
+            font-size: 1rem;
+            border-left: 8px solid #628da0;
+            box-shadow: 0 2px 6px #bacfdf;
+            word-break: break-word;
+        }
+        button {
+            background: #1d6f96;
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px 32px;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.15s;
+            border: 2px solid white;
+        }
+        button:hover {
+            background: #135c80;
+        }
+        .note {
+            color: #4b6372;
+            font-style: italic;
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px dashed #b1c9dd;
+        }
+    </style>
+</head>
+<body>
+<div class="app-window">
+    <!-- Шапка с названием и иконкой меню (три линии) -->
+    <div class="app-header">
+        <div class="burger-icon" id="menuToggle">☰</div>
+        <span class="site-title">⚒️ ТагирРиита</span>
+        <div class="header-sub">Айзек</div>
+    </div>
+
+    <div class="main-layout">
+        <!-- Боковое меню (скрыто) -->
+        <div class="side-menu" id="sideMenu">
+            <div class="menu-item active" data-page="calc" id="menuCalc">📐 Расчеты</div>
+            <div class="menu-item" data-page="dict" id="menuDict">📚 Словарь</div>
+        </div>
+
+        <!-- Контентная часть (динамически подменяется) -->
+        <div class="content-panel" id="contentPanel">
+            <!-- сюда будет рендериться или калькулятор или словарь через JS -->
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---------- ГЛОБАЛЬНЫЕ ДАННЫЕ ----------
+        const data = {
+            dryWeight: 20.5,           // г
+            satWeight: 22.8,            // г
+            submWeight: 12.4,            // г
+            residualWeight: 21.0,        // г
+            liquidDensity: 1.00,         // г/см³
+            grainDensity: 2.65,          
+            bulkDensity: 2.20,           
+            poreVolume: 2.3             // см³
+        };
+
+        // История расчетов (максимум 8 записей)
+        let historyLog = [];  // храним строки
+
+        // Элементы управления
+        const menuToggle = document.getElementById('menuToggle');
+        const sideMenu = document.getElementById('sideMenu');
+        const menuCalc = document.getElementById('menuCalc');
+        const menuDict = document.getElementById('menuDict');
+        const contentPanel = document.getElementById('contentPanel');
+
+        // Функция переключения меню
+        menuToggle.addEventListener('click', function() {
+            sideMenu.classList.toggle('visible');
+        });
+
+        // Состояние активной страницы ('calc' или 'dict')
+        let currentPage = 'calc';
+
+        // ---------- ФУНКЦИЯ РЕНДЕРА КАЛЬКУЛЯТОРА ----------
+        function renderCalculator() {
+            let html = `
+                <div class="calc-block">
+                    <!-- Поле 1: выбираемый параметр -->
+                    <div class="grid-field">
+                        <label>1. Выберите измеряемую величину:</label>
+                        <div class="input-wrapper">
+                            <select id="paramSelect" style="min-width:270px;">
+                                <option value="dryWeight">Вес сухого образца в воздухе (г)</option>
+                                <option value="satWeight">Вес насыщенного образца в воздухе (г)</option>
+                                <option value="submWeight">Вес насыщенного образца в жидкости (г)</option>
+                                <option value="residualWeight">Вес образца с остаточной жидкостью (г)</option>
+                                <option value="liquidDensity">Плотность жидкости (г/см³)</option>
+                                <option value="grainDensity">Плотность минеральных зерен (г/см³)</option>
+                                <option value="bulkDensity">Плотность насыщенного образца (г/см³)</option>
+                            </select>
+                            <input type="number" id="inputValue" step="any" value="0.0" placeholder="значение">
+                            <span class="unit-badge" id="unitDisplay">г</span>
+                        </div>
+                    </div>
+
+                    <!-- Поле 3: Жидкость (вода/керосин) + объем пор -->
+                    <div class="density-preset">
+                        <span class="label">💧 Плотность жидкости (выбрать):</span>
+                        <select id="liquidChoice">
+                            <option value="1.00">Вода (1.00 г/см³)</option>
+                            <option value="0.82">Керосин (0.82 г/см³)</option>
+                        </select>
+                        <span class="preset-value" id="selectedLiquidDisp">1.00 г/см³</span>
+                        <div style="display:flex; align-items:center; gap:10px; margin-left:auto;">
+                            <span style="font-weight:600;">📌 объем пор</span>
+                            <input type="number" id="poreVolumeInput" step="any" value="0.0" style="width:100px; padding:8px; border-radius:30px; border:2px solid #b9cee2;">
+                            <span class="unit-badge">см³</span>
+                        </div>
+                    </div>
+
+                    <!-- Сводка значений -->
+                    <div style="background:#ecf3fa; border-radius:32px; padding:14px 22px; margin:20px 0; display:flex; flex-wrap:wrap; gap:20px;">
+                        <div><strong>✱ сухой (г):</strong> <span id="dispDry">0.00</span></div>
+                        <div><strong>✱ насыщ. возд (г):</strong> <span id="dispSat">0.00</span></div>
+                        <div><strong>✱ насыщ. жидк (г):</strong> <span id="dispSubm">0.00</span></div>
+                        <div><strong>✱ ост.жидк (г):</strong> <span id="dispResid">0.00</span></div>
+                        <div><strong>✱ ρ жидк (г/см³):</strong> <span id="dispLiq">1.00</span></div>
+                        <div><strong>✱ ρ зерен (г/см³):</strong> <span id="dispGrain">2.65</span></div>
+                        <div><strong>✱ ρ нас (г/см³):</strong> <span id="dispBulkd">2.20</span></div>
+                    </div>
+
+                    <!-- Блок РАСЧЕТА -->
+                    <div class="poro-box">
+                        <div style="display:flex; align-items:center; gap:30px; flex-wrap:wrap; margin-bottom:25px;">
+                            <span style="font-weight:600; font-size:1.3rem;">🧮 Рассчитать:</span>
+                            <select id="calcSelect">
+                                <option value="abs">Абсолютная пористость (Kп абс)</option>
+                                <option value="open">Открытая пористость (Kп откр)</option>
+                                <option value="eff">Эффективная пористость (Kп эфф)</option>
+                            </select>
+                            <button id="calcBtn">Вычислить</button>
+                        </div>
+                        <div class="result-area">
+                            <span class="result-value" id="resultNumber">0.000</span>
+                            <span class="unit-badge" id="resultUnit">%</span>
+                            <span style="color:#0a4b68;" id="formulaHint">доли → %</span>
+                        </div>
+                    </div>
+
+                    <!-- ИСТОРИЯ РАСЧЕТОВ -->
+                    <div class="history-box">
+                        <div class="history-title">📋 История расчетов</div>
+                        <ul id="historyList">
+                            ${historyLog.length ? historyLog.map(item => `<li>${item}</li>`).join('') : '<li style="background:#f4f9ff;">Пока нет вычислений</li>'}
+                        </ul>
+                        <button id="clearHistoryBtn" style="margin-top:12px; background:#4f6b7e; padding:6px 20px;">Очистить историю</button>
+                    </div>
+                    <div class="note">
+                        ⚡ Вводите значения — автоматически сохраняются. История записывает каждое нажатие «Вычислить».
+                    </div>
+                </div>
+            `;
+            contentPanel.innerHTML = html;
+
+            // После вставки назначаем обработчики для калькулятора
+            initializeCalcHandlers();
+        }
+
+        // ---------- ИНИЦИАЛИЗАЦИЯ ВСЕХ СОБЫТИЙ КАЛЬКУЛЯТОРА ----------
+        function initializeCalcHandlers() {
+            // Элементы
+            const paramSelect = document.getElementById('paramSelect');
+            const inputValue = document.getElementById('inputValue');
+            const unitDisplay = document.getElementById('unitDisplay');
+            const liquidChoice = document.getElementById('liquidChoice');
+            const selectedLiquidDisp = document.getElementById('selectedLiquidDisp');
+            const poreVolumeInput = document.getElementById('poreVolumeInput');
+            const dispDry = document.getElementById('dispDry');
+            const dispSat = document.getElementById('dispSat');
+            const dispSubm = document.getElementById('dispSubm');
+            const dispResid = document.getElementById('dispResid');
+            const dispLiq = document.getElementById('dispLiq');
+            const dispGrain = document.getElementById('dispGrain');
+            const dispBulkd = document.getElementById('dispBulkd');
+            const calcBtn = document.getElementById('calcBtn');
+            const calcSelect = document.getElementById('calcSelect');
+            const resultNumber = document.getElementById('resultNumber');
+            const resultUnit = document.getElementById('resultUnit');
+            const formulaHint = document.getElementById('formulaHint');
+            const historyList = document.getElementById('historyList');
+            const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+            // Функция обновления единиц измерения поля 1
+            function updateUnitByParam() {
+                const param = paramSelect.value;
+                unitDisplay.textContent = (param.includes('Density') || param.includes('liquidDensity') || param.includes('grainDensity') || param.includes('bulkDensity')) ? 'г/см³' : 'г';
+            }
+            updateUnitByParam();
+            paramSelect.addEventListener('change', function() {
+                updateUnitByParam();
+                syncInputFromData();
+            });
+
+            // синхронизация поля ввода с данными
+            function syncInputFromData() {
+                const param = paramSelect.value;
+                let val = data[param];
+                if (val === undefined) val = 0;
+                inputValue.value = val.toFixed(3);
+            }
+
+            // Обновление всех дисплеев
+            function updateAllDisplays() {
+                dispDry.textContent = data.dryWeight.toFixed(2);
+                dispSat.textContent = data.satWeight.toFixed(2);
+                dispSubm.textContent = data.submWeight.toFixed(2);
+                dispResid.textContent = data.residualWeight.toFixed(2);
+                dispLiq.textContent = data.liquidDensity.toFixed(2);
+                dispGrain.textContent = data.grainDensity.toFixed(2);
+                dispBulkd.textContent = data.bulkDensity.toFixed(2);
+                poreVolumeInput.value = data.poreVolume.toFixed(2);
+                // синхронизировать селект жидкости
+                if (Math.abs(data.liquidDensity - 1.0) < 0.01) liquidChoice.value = '1.00';
+                else if (Math.abs(data.liquidDensity - 0.82) < 0.01) liquidChoice.value = '0.82';
+                selectedLiquidDisp.textContent = data.liquidDensity.toFixed(2) + ' г/см³';
+                syncInputFromData();
+            }
+
+            // Считывание из input в data
+            function readInputToData() {
+                const param = paramSelect.value;
+                let val = parseFloat(inputValue.value);
+                if (isNaN(val)) val = 0.0;
+                data[param] = val;
+                // если это liquidDensity, то обновить пресет
+                if (param === 'liquidDensity') {
+                    if (Math.abs(data.liquidDensity - 1.0) < 0.01) liquidChoice.value = '1.00';
+                    else if (Math.abs(data.liquidDensity - 0.82) < 0.01) liquidChoice.value = '0.82';
+                    selectedLiquidDisp.textContent = data.liquidDensity.toFixed(2) + ' г/см³';
+                }
+                updateAllDisplays();
+            }
+
+            inputValue.addEventListener('input', function() {
+                readInputToData();
+            });
+
+            // выбор жидкости
+            liquidChoice.addEventListener('change', function() {
+                data.liquidDensity = parseFloat(liquidChoice.value);
+                selectedLiquidDisp.textContent = data.liquidDensity.toFixed(2) + ' г/см³';
+                if (paramSelect.value === 'liquidDensity') syncInputFromData();
+                updateAllDisplays();
+            });
+
+            // объем пор
+            poreVolumeInput.addEventListener('input', function() {
+                data.poreVolume = parseFloat(poreVolumeInput.value) || 0;
+            });
+
+            // переключение полей paramSelect обновляет input
+            paramSelect.addEventListener('change', function() {
+                syncInputFromData();
+            });
+
+            // ---------- РАСЧЕТ ----------
+            function performCalculation() {
+                const type = calcSelect.value; // abs, open, eff
+                const rhoLiq = data.liquidDensity;
+                const Wsat = data.satWeight;
+                const Wsub = data.submWeight;
+                const Wdry = data.dryWeight;
+                const Wres = data.residualWeight;
+                const grainRho = data.grainDensity;
+                const poreVolInput = data.poreVolume;
+
+                let Vb = 0;
+                if (Wsat > 0 && Wsub >= 0 && rhoLiq > 0) {
+                    Vb = (Wsat - Wsub) / rhoLiq;
+                } else if (data.bulkDensity > 0 && Wsat > 0) {
+                    Vb = Wsat / data.bulkDensity;
+                } else {
+                    // fallback через объем зерен + объем пор
+                    if (grainRho > 0 && Wdry > 0) {
+                        let Vsolid = Wdry / grainRho;
+                        Vb = Vsolid + (poreVolInput > 0 ? poreVolInput : 0.1);
+                    }
+                }
+
+                // абсолютный объем пор
+                let Vp_abs = 0;
+                if (grainRho > 0 && Wdry > 0 && Vb > 0) {
+                    Vp_abs = Vb - (Wdry / grainRho);
+                } else if (poreVolInput > 0) Vp_abs = poreVolInput;
+
+                let Vp_open = 0;
+                if (rhoLiq > 0 && Wsat > 0 && Wdry > 0) {
+                    Vp_open = (Wsat - Wdry) / rhoLiq;
+                } else Vp_open = Vp_abs;
+
+                let Vp_eff = 0;
+                if (rhoLiq > 0 && Wsat > 0 && Wres > 0) {
+                    Vp_eff = (Wsat - Wres) / rhoLiq;
+                } else Vp_eff = Vp_open * 0.7;
+
+                if (Vb <= 0) Vb = 1; // защита
+
+                let porosity = 0;
+                if (type === 'abs') porosity = (Vp_abs / Vb) * 100;
+                else if (type === 'open') porosity = (Vp_open / Vb) * 100;
+                else porosity = (Vp_eff / Vb) * 100;
+                if (isNaN(porosity) || porosity < 0) porosity = 0;
+
+                resultNumber.textContent = porosity.toFixed(3);
+                resultUnit.textContent = '%';
+                formulaHint.textContent = 'расчёт выполнен';
+
+                // Добавить в историю
+                const typeName = calcSelect.options[calcSelect.selectedIndex].text;
+                const historyEntry = `${typeName} = ${porosity.toFixed(3)} %  (данные: сух.${Wdry}, нас.${Wsat})`;
+                historyLog.unshift(historyEntry);
+                if (historyLog.length > 8) historyLog.pop();
+
+                // обновить список истории
+                renderHistoryList();
+            }
+
+            function renderHistoryList() {
+                if (!historyList) return;
+                if (historyLog.length) {
+                    historyList.innerHTML = historyLog.map(item => `<li>${item}</li>`).join('');
+                } else {
+                    historyList.innerHTML = '<li style="background:#f4f9ff;">Пока нет вычислений</li>';
+                }
+            }
+
+            calcBtn.addEventListener('click', function() {
+                performCalculation();
+            });
+
+            clearHistoryBtn.addEventListener('click', function() {
+                historyLog = [];
+                renderHistoryList();
+            });
+
+            // инициализация отображения данных
+            updateAllDisplays();
+            // вызовем расчет для начальных цифр
+            setTimeout(() => performCalculation(), 30);
+        }
+
+        // ---------- СЛОВАРЬ ----------
+        function renderDictionary() {
+            const dictHtml = `
+                <div class="dictionary-block">
+                    <div class="dict-entry">
+                        <div class="dict-term">Абсолютная пористость</div>
+                        <div class="dict-def">Численно пористость выражается коэффициентом общей (полной, абсолютной) пористости (m), который показывает, какую долю от общего объема породы занимают эти пустоты.</div>
+                    </div>
+                    <div class="dict-entry">
+                        <div class="dict-term">Открытая пористость</div>
+                        <div class="dict-def">Коэффициент открытой пористости (mо) зависит от объёма только тех пор, которые сообщаются между собой и с поверхностью образца. По ним флюид теоретически может двигаться.</div>
+                    </div>
+                    <div class="dict-entry">
+                        <div class="dict-term">Эффективная пористость</div>
+                        <div class="dict-def">Коэффициент эффективной пористости (mэф.) оценивает фильтрацию в породе жидкости или газа, включает часть открытой пористости, по которой флюид действительно движется при существующих перепадах давления.</div>
+                    </div>
+                    <div class="dict-entry">
+                        <div class="dict-term">Закрытая пористость</div>
+                        <div class="dict-def">Закрытая пористость — совокупность замкнутых, взаимно не сообщающихся пор.</div>
+                    </div>
+                    <div class="dict-note">📐 Для коэффициентов пористости всегда выполняется соотношение: <strong>mп > mo > mэф.</strong></div>
+                </div>
+            `;
+            contentPanel.innerHTML = dictHtml;
+        }
+
+        // ---------- ПЕРЕКЛЮЧЕНИЕ СТРАНИЦ ----------
+        function setActivePage(page) {
+            currentPage = page;
+            menuCalc.classList.toggle('active', page === 'calc');
+            menuDict.classList.toggle('active', page === 'dict');
+            if (page === 'calc') {
+                renderCalculator();
+            } else {
+                renderDictionary();
+            }
+            // если меню открыто, можно его автоматически закрыть на мобильных? но оставим как есть
+        }
+
+        menuCalc.addEventListener('click', function() {
+            setActivePage('calc');
+            sideMenu.classList.remove('visible'); // удобно закрыть меню после выбора
+        });
+        menuDict.addEventListener('click', function() {
+            setActivePage('dict');
+            sideMenu.classList.remove('visible');
+        });
+
+        // начальная загрузка калькулятора
+        setActivePage('calc');
+
+        // также глобально храним historyLog для доступа, уже объявлен.
+    })();
+</script>
+</body>
+</html>
